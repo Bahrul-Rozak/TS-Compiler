@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>TS Embed · TypeScript Compiler</title>
+  <!-- Font Awesome 6 (free) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: linear-gradient(145deg, #0a0f1e 0%, #0c1222 100%);
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Fira Code', monospace;
+      color: #eef4ff;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    /* main card container */
+    .compiler-card {
+      max-width: 1400px;
+      width: 100%;
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(2px);
+      border-radius: 2rem;
+      box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(56, 189, 248, 0.15);
+      overflow: hidden;
+      transition: all 0.2s ease;
+    }
+
+    /* header bar */
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 1rem 1.5rem;
+      background: rgba(2, 8, 23, 0.7);
+      border-bottom: 1px solid rgba(71, 85, 105, 0.5);
+    }
+
+    .brand {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .brand h1 {
+      font-size: 1.4rem;
+      font-weight: 600;
+      letter-spacing: -0.3px;
+      background: linear-gradient(135deg, #c084fc, #60a5fa);
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      margin: 0;
+    }
+
+    .badge {
+      font-size: 0.7rem;
+      background: #1e293b;
+      padding: 2px 8px;
+      border-radius: 40px;
+      font-family: monospace;
+      color: #94a3b8;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+    }
+
+    select, button, .ctrl-check {
+      background: #0f172a;
+      border: 1px solid #334155;
+      color: #e2e8f0;
+      padding: 6px 14px;
+      border-radius: 40px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+
+    select:hover, button:hover {
+      background: #1e293b;
+      border-color: #60a5fa;
+      color: white;
+    }
+
+    button:active {
+      transform: scale(0.97);
+    }
+
+    .ctrl-check {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #0f172a;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .ctrl-check input {
+      width: 16px;
+      height: 16px;
+      accent-color: #3b82f6;
+      margin: 0;
+      cursor: pointer;
+    }
+
+    /* main dual pane layout */
+    .split-pane {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+    }
+
+    .editor-area, .output-area {
+      flex: 1;
+      min-width: 280px;
+      display: flex;
+      flex-direction: column;
+      background: #020617;
+    }
+
+    .editor-area {
+      border-right: 1px solid #1e293b;
+    }
+
+    .pane-header {
+      padding: 12px 20px;
+      background: #0b1120;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 600;
+      color: #7c8db0;
+      border-bottom: 1px solid #1e293b;
+    }
+
+    .pane-header i {
+      margin-right: 6px;
+      font-size: 0.8rem;
+    }
+
+    .ts-textarea {
+      flex: 1;
+      background: #030712;
+      border: none;
+      color: #e2e8f0;
+      font-family: 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 14px;
+      line-height: 1.5;
+      padding: 20px;
+      resize: vertical;
+      outline: none;
+      tab-size: 2;
+      white-space: pre-wrap;
+      min-height: 380px;
+    }
+
+    .ts-textarea:focus {
+      background: #050b16;
+      box-shadow: inset 0 0 0 1px #3b82f6;
+    }
+
+    .js-preview {
+      background: #030712;
+      flex: 1;
+      padding: 16px 20px;
+      margin: 0;
+      overflow-x: auto;
+      font-family: 'Fira Code', monospace;
+      font-size: 13px;
+      color: #b9c7db;
+      white-space: pre-wrap;
+      word-break: break-word;
+      min-height: 240px;
+      border-bottom: 1px solid #1e293b;
+    }
+
+    .console-box {
+      background: #0a0f1c;
+      padding: 12px 20px;
+      font-family: 'Fira Code', monospace;
+      font-size: 12px;
+      min-height: 150px;
+      max-height: 220px;
+      overflow-y: auto;
+      color: #a5b4fc;
+      border-top: 1px solid #1e293b;
+    }
+
+    .console-box pre {
+      margin: 4px 0;
+      white-space: pre-wrap;
+      font-family: monospace;
+    }
+
+    .error-log {
+      color: #f87171;
+      background: #2d1a1f;
+      padding: 6px 12px;
+      border-radius: 12px;
+      margin: 6px 0;
+      font-size: 12px;
+    }
+
+    .info-log {
+      color: #94a3b8;
+    }
+
+    .footer-note {
+      background: #0f172a;
+      padding: 10px 20px;
+      font-size: 0.7rem;
+      text-align: center;
+      border-top: 1px solid #1e293b;
+      color: #5b6e8c;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .footer-note code {
+      background: #00000044;
+      padding: 2px 8px;
+      border-radius: 24px;
+      font-family: monospace;
+      font-size: 0.7rem;
+    }
+
+    .powered {
+      font-weight: 500;
+      letter-spacing: 0.3px;
+    }
+
+    .powered i {
+      margin-right: 4px;
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #2d3a5e;
+      border-radius: 8px;
+    }
+
+    button i, label i {
+      margin-right: 6px;
+    }
+  </style>
+  <!-- TypeScript Compiler from CDN (latest stable) -->
+  <script src="https://cdn.jsdelivr.net/npm/typescript@5.3.3/lib/typescript.js"></script>
+</head>
+<body>
+<div class="compiler-card">
+  <div class="toolbar">
+    <div class="brand">
+      <h1><i class="fab fa-js"></i> TypeScript Embed</h1>
+      <span class="badge">compiler · live</span>
+    </div>
+    <div class="controls">
+      <select id="targetSelect">
+        <option value="ES5">ES5 (legacy)</option>
+        <option value="ES2015" selected>ES2015 (ES6)</option>
+        <option value="ES2020">ES2020</option>
+        <option value="ES2022">ES2022</option>
+      </select>
+      <label class="ctrl-check">
+        <input type="checkbox" id="strictMode" checked> <i class="fas fa-check-circle"></i> Strict
+      </label>
+      <button id="compileBtn"><i class="fas fa-code"></i> Compile</button>
+      <button id="runBtn"><i class="fas fa-play"></i> Run JS</button>
+      <button id="copyBtn"><i class="far fa-copy"></i> Copy JS</button>
+      <label class="ctrl-check">
+        <input type="checkbox" id="autoCompile"> <i class="fas fa-sync-alt"></i> Auto
+      </label>
+    </div>
+  </div>
+
+  <div class="split-pane">
+    <!-- Editor Panel -->
+    <div class="editor-area">
+      <div class="pane-header">
+        <i class="fas fa-code"></i> TypeScript Code
+      </div>
+      <textarea id="tsCode" class="ts-textarea" spellcheck="false"></textarea>
+    </div>
+
+    <!-- Output Panel -->
+    <div class="output-area">
+      <div class="pane-header">
+        <i class="fab fa-js"></i> JavaScript Output
+      </div>
+      <pre id="jsOutput" class="js-preview">// Click "Compile" or enable Auto mode</pre>
+      <div class="pane-header" style="border-top: none;">
+        <i class="fas fa-terminal"></i> Console & Diagnostics
+      </div>
+      <div id="consolePanel" class="console-box">
+        <pre class="info-log"><i class="fas fa-info-circle"></i> Ready — write TypeScript, press Compile or Run.</pre>
+      </div>
+    </div>
+  </div>
+  <div class="footer-note">
+    <span><i class="fas fa-code-branch"></i> Developed By → <a href="https://github.com/Bahrul-Rozak">Bahrul Rozak</a></span>
+    <span class="powered"><i class="fas fa-heart"></i> Powered by CODEPOLITAN</span>
+  </div>
+</div>
+
+<script>
+  (function() {
+    // ----- DOM elements -----
+    const tsEditor = document.getElementById('tsCode');
+    const jsOutputPre = document.getElementById('jsOutput');
+    const consoleDiv = document.getElementById('consolePanel');
+    const compileBtn = document.getElementById('compileBtn');
+    const runBtn = document.getElementById('runBtn');
+    const copyBtn = document.getElementById('copyBtn');
+    const targetSelect = document.getElementById('targetSelect');
+    const strictCheck = document.getElementById('strictMode');
+    const autoCompileCheck = document.getElementById('autoCompile');
+
+    // state
+    let currentCompiledJS = '';
+    let compileErrorOccurred = false;
+    let tsLoaded = typeof ts !== 'undefined';
+
+    // --- helper: mapping target string to ts.ScriptTarget
+    function getTargetFromString(targetStr) {
+      if (!tsLoaded) return ts.ScriptTarget.ES2015;
+      const map = {
+        'ES5': ts.ScriptTarget.ES5,
+        'ES2015': ts.ScriptTarget.ES2015,
+        'ES2020': ts.ScriptTarget.ES2020,
+        'ES2022': ts.ScriptTarget.ES2022
+      };
+      return map[targetStr] || ts.ScriptTarget.ES2015;
+    }
+
+    // Format diagnostic from TypeScript
+    function formatDiagnostic(diagnostic) {
+      if (!diagnostic) return 'Unknown error';
+      if (typeof diagnostic.messageText === 'string') return diagnostic.messageText;
+      if (diagnostic.messageText && diagnostic.messageText.messageText) {
+        return diagnostic.messageText.messageText;
+      }
+      try {
+        return ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
+      } catch(e) {
+        return String(diagnostic.messageText);
+      }
+    }
+
+    // Clear console panel
+    function clearConsole(keepPlaceholder = false) {
+      if (keepPlaceholder) {
+        consoleDiv.innerHTML = '<pre class="info-log"><i class="fas fa-hourglass-half"></i> Compiling...</pre>';
+      } else {
+        consoleDiv.innerHTML = '';
+      }
+    }
+
+    // Escape HTML
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+      });
+    }
+
+    // Add message to console panel (no emoji)
+    function addConsoleMessage(message, type = 'log') {
+      const msgDiv = document.createElement('pre');
+      msgDiv.style.margin = '4px 0';
+      msgDiv.style.whiteSpace = 'pre-wrap';
+      if (type === 'error') {
+        msgDiv.style.color = '#fca5a5';
+        msgDiv.style.background = 'rgba(127, 29, 29, 0.3)';
+        msgDiv.style.padding = '4px 8px';
+        msgDiv.style.borderRadius = '12px';
+        msgDiv.innerHTML = `<i class="fas fa-times-circle"></i> ${escapeHtml(message)}`;
+      } else if (type === 'success') {
+        msgDiv.style.color = '#bef264';
+        msgDiv.innerHTML = `<i class="fas fa-check-circle"></i> ${escapeHtml(message)}`;
+      } else if (type === 'info') {
+        msgDiv.style.color = '#94a3b8';
+        msgDiv.innerHTML = `<i class="fas fa-info-circle"></i> ${escapeHtml(message)}`;
+      } else {
+        msgDiv.style.color = '#cbd5e1';
+        msgDiv.innerHTML = `<i class="fas fa-angle-right"></i> ${escapeHtml(message)}`;
+      }
+      consoleDiv.appendChild(msgDiv);
+      msgDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    // Main compilation function
+    function performCompile() {
+      if (!tsLoaded) {
+        addConsoleMessage("TypeScript library not loaded yet, please try again.", "error");
+        return false;
+      }
+
+      const sourceCode = tsEditor.value;
+      const targetStr = targetSelect.value;
+      const strictEnabled = strictCheck.checked;
+
+      const compilerOptions = {
+        target: getTargetFromString(targetStr),
+        module: ts.ModuleKind.None,
+        strict: strictEnabled,
+        noEmitOnError: false,
+        removeComments: false,
+        allowJs: false,
+        esModuleInterop: false,
+        forceConsistentCasingInFileNames: true,
+        skipLibCheck: true,
+      };
+
+      try {
+        const result = ts.transpileModule(sourceCode, {
+          compilerOptions: compilerOptions,
+          reportDiagnostics: true
+        });
+
+        const diagnostics = result.diagnostics || [];
+        const hasError = diagnostics.some(d => d.category === ts.DiagnosticCategory.Error);
+        
+        consoleDiv.innerHTML = '';
+        
+        if (hasError) {
+          compileErrorOccurred = true;
+          for (const diag of diagnostics) {
+            if (diag.category === ts.DiagnosticCategory.Error) {
+              const errMsg = formatDiagnostic(diag);
+              addConsoleMessage(`TypeScript error: ${errMsg}`, 'error');
+            }
+          }
+          if (result.outputText) {
+            currentCompiledJS = result.outputText;
+            jsOutputPre.innerText = currentCompiledJS || '// Compilation produced errors, but output is shown.';
+          } else {
+            currentCompiledJS = '';
+            jsOutputPre.innerText = '// Compilation failed. Fix TypeScript errors above.';
+          }
+          const errorCount = diagnostics.filter(d => d.category === ts.DiagnosticCategory.Error).length;
+          addConsoleMessage(`Compilation finished with ${errorCount} error(s).`, 'error');
+          return false;
+        } else {
+          compileErrorOccurred = false;
+          const generatedJS = result.outputText || '';
+          currentCompiledJS = generatedJS;
+          jsOutputPre.innerText = generatedJS || '// (empty output)';
+          if (diagnostics.length > 0) {
+            for (const diag of diagnostics) {
+              if (diag.category === ts.DiagnosticCategory.Warning) {
+                addConsoleMessage(`Warning: ${formatDiagnostic(diag)}`, 'info');
+              }
+            }
+          }
+          addConsoleMessage(`Compilation successful → target ${targetStr}, strict: ${strictEnabled}`, 'success');
+          return true;
+        }
+      } catch (err) {
+        consoleDiv.innerHTML = '';
+        compileErrorOccurred = true;
+        currentCompiledJS = '';
+        jsOutputPre.innerText = '// Runtime error during compilation. Check TypeScript syntax.';
+        addConsoleMessage(`Compiler internal error: ${err.message || err}`, 'error');
+        return false;
+      }
+    }
+
+    // Run compiled JavaScript with console capture
+    function runCompiledCode() {
+      let jsToRun = currentCompiledJS;
+      if (compileErrorOccurred || !jsToRun.trim()) {
+        addConsoleMessage("Compile first or make sure TypeScript is valid. Re-compiling...", "info");
+        const compileOk = performCompile();
+        if (!compileOk || compileErrorOccurred) {
+          addConsoleMessage("Cannot run code due to compilation errors. Fix errors first.", "error");
+          return;
+        }
+        jsToRun = currentCompiledJS;
+        if (!jsToRun.trim()) {
+          addConsoleMessage("No JavaScript output to run.", "error");
+          return;
+        }
+      }
+      
+      consoleDiv.innerHTML = '';
+      addConsoleMessage("Running JavaScript ...", "info");
+      
+      const originalConsole = {
+        log: console.log,
+        error: console.error,
+        warn: console.warn,
+        info: console.info
+      };
+      
+      const logs = [];
+      function captureLog(level, args) {
+        let message = args.map(arg => {
+          if (typeof arg === 'object') {
+            try {
+              return JSON.stringify(arg);
+            } catch(e) { return String(arg); }
+          }
+          return String(arg);
+        }).join(' ');
+        logs.push({ level, message });
+        if (level === 'log') originalConsole.log(...args);
+        if (level === 'error') originalConsole.error(...args);
+        if (level === 'warn') originalConsole.warn(...args);
+        if (level === 'info') originalConsole.info(...args);
+      }
+      
+      console.log = (...args) => captureLog('log', args);
+      console.error = (...args) => captureLog('error', args);
+      console.warn = (...args) => captureLog('warn', args);
+      console.info = (...args) => captureLog('info', args);
+      
+      let runtimeError = null;
+      try {
+        const evalFn = new Function(jsToRun);
+        evalFn();
+      } catch (err) {
+        runtimeError = err;
+        logs.push({ level: 'error', message: `Runtime Error: ${err.message || err}` });
+      } finally {
+        console.log = originalConsole.log;
+        console.error = originalConsole.error;
+        console.warn = originalConsole.warn;
+        console.info = originalConsole.info;
+      }
+      
+      if (logs.length === 0 && !runtimeError) {
+        addConsoleMessage("Program finished with no console output.", "info");
+      } else {
+        for (const log of logs) {
+          if (log.level === 'error') addConsoleMessage(`[ERROR] ${log.message}`, 'error');
+          else if (log.level === 'warn') addConsoleMessage(`[WARN] ${log.message}`, 'info');
+          else if (log.level === 'info') addConsoleMessage(`[INFO] ${log.message}`, 'info');
+          else addConsoleMessage(log.message, 'log');
+        }
+      }
+      if (runtimeError) {
+        addConsoleMessage(`${runtimeError.message || runtimeError}`, 'error');
+      } else {
+        addConsoleMessage("Execution finished.", "success");
+      }
+    }
+    
+    // Copy JS to clipboard
+    function copyJSOutput() {
+      if (!currentCompiledJS && !compileErrorOccurred) {
+        performCompile();
+      }
+      const jsCode = jsOutputPre.innerText;
+      if (!jsCode || (jsCode.includes("Compilation failed") && compileErrorOccurred)) {
+        addConsoleMessage("No valid JavaScript code to copy.", "error");
+        return;
+      }
+      navigator.clipboard.writeText(jsCode).then(() => {
+        addConsoleMessage("JavaScript copied to clipboard!", "success");
+      }).catch(() => {
+        addConsoleMessage("Failed to copy automatically, please copy manually.", "error");
+      });
+    }
+    
+    // Debounce for auto compile
+    let debounceTimer = null;
+    function scheduleCompile() {
+      if (autoCompileCheck.checked) {
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          performCompile();
+          debounceTimer = null;
+        }, 500);
+      }
+    }
+    
+    // Event listeners
+    compileBtn.addEventListener('click', () => {
+      performCompile();
+    });
+    
+    runBtn.addEventListener('click', () => {
+      runCompiledCode();
+    });
+    
+    copyBtn.addEventListener('click', () => {
+      copyJSOutput();
+    });
+    
+    function onCompilerOptionChange() {
+      if (autoCompileCheck.checked) {
+        if (debounceTimer) clearTimeout(debounceTimer);
+        performCompile();
+      } else {
+        addConsoleMessage("Compiler settings changed. Click Compile or enable Auto.", "info");
+      }
+    }
+    
+    targetSelect.addEventListener('change', onCompilerOptionChange);
+    strictCheck.addEventListener('change', onCompilerOptionChange);
+    tsEditor.addEventListener('input', () => {
+      scheduleCompile();
+    });
+    
+    autoCompileCheck.addEventListener('change', (e) => {
+      if (e.target.checked) {
+        addConsoleMessage("Auto Compile enabled — code will compile automatically.", "success");
+        performCompile();
+      } else {
+        addConsoleMessage("Auto Compile disabled. Use Compile button manually.", "info");
+      }
+    });
+    
+    // Default TypeScript code - simple Hello World example
+    const defaultCode = `// Simple Hello World in TypeScript
+const greeting: string = "Hello, World!";
+console.log(greeting);
+
+// A tiny function with types
+function sayHello(name: string): string {
+  return \`Hello, \${name}!\`;
+}
+
+console.log(sayHello("TypeScript User"));
+
+// Optional: show a number operation
+const version: number = 5.3;
+console.log(\`TypeScript version \${version} is powering this embed.\`);
+`;
+
+    tsEditor.value = defaultCode;
+    
+    function initWhenReady() {
+      if (typeof ts !== 'undefined') {
+        tsLoaded = true;
+        performCompile();
+        addConsoleMessage("TypeScript engine ready — embedded compiler active.", "success");
+      } else {
+        setTimeout(() => {
+          if (typeof ts !== 'undefined') {
+            tsLoaded = true;
+            performCompile();
+            addConsoleMessage("TypeScript ready (late load).", "success");
+          } else {
+            consoleDiv.innerHTML = '<pre class="error-log"><i class="fas fa-exclamation-triangle"></i> Failed to load TypeScript compiler. Check internet connection or refresh.</pre>';
+          }
+        }, 800);
+      }
+    }
+    
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initWhenReady);
+    } else {
+      initWhenReady();
+    }
+  })();
+</script>
+</body>
+</html>
