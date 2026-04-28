@@ -3,9 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-  <title>TS Embed · TypeScript Compiler</title>
-  <!-- Font Awesome 6 (free) -->
+  <title>TS Embed · TypeScript Compiler with Syntax Highlight</title>
+  <!-- Font Awesome 6 -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <!-- CodeMirror 5 (lightweight, syntax highlight) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/theme/dracula.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/javascript/javascript.min.js"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -23,7 +28,6 @@
       padding: 16px;
     }
 
-    /* main card container */
     .compiler-card {
       max-width: 1400px;
       width: 100%;
@@ -32,10 +36,8 @@
       border-radius: 2rem;
       box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(56, 189, 248, 0.15);
       overflow: hidden;
-      transition: all 0.2s ease;
     }
 
-    /* header bar */
     .toolbar {
       display: flex;
       flex-wrap: wrap;
@@ -120,7 +122,6 @@
       cursor: pointer;
     }
 
-    /* main dual pane layout */
     .split-pane {
       display: flex;
       flex-direction: row;
@@ -155,40 +156,30 @@
       font-size: 0.8rem;
     }
 
-    .ts-textarea {
-      flex: 1;
-      background: #030712;
-      border: none;
-      color: #e2e8f0;
+    /* CodeMirror overrides */
+    .CodeMirror {
+      height: auto;
+      min-height: 380px;
       font-family: 'Fira Code', 'JetBrains Mono', monospace;
       font-size: 14px;
       line-height: 1.5;
-      padding: 20px;
-      resize: vertical;
-      outline: none;
-      tab-size: 2;
-      white-space: pre-wrap;
-      min-height: 380px;
-    }
-
-    .ts-textarea:focus {
-      background: #050b16;
-      box-shadow: inset 0 0 0 1px #3b82f6;
-    }
-
-    .js-preview {
       background: #030712;
-      flex: 1;
-      padding: 16px 20px;
-      margin: 0;
-      overflow-x: auto;
-      font-family: 'Fira Code', monospace;
-      font-size: 13px;
-      color: #b9c7db;
-      white-space: pre-wrap;
-      word-break: break-word;
-      min-height: 240px;
-      border-bottom: 1px solid #1e293b;
+    }
+    .cm-s-dracula .CodeMirror-cursor {
+      border-left-color: #60a5fa;
+    }
+    .cm-s-dracula .CodeMirror-selected {
+      background: #2d3a5e;
+    }
+    .cm-s-dracula .CodeMirror-gutters {
+      background: #020617;
+      border-right: 1px solid #1e293b;
+    }
+    .js-output-cm {
+      min-height: 260px;
+    }
+    .CodeMirror-scroll {
+      padding: 8px 0;
     }
 
     .console-box {
@@ -207,19 +198,6 @@
       margin: 4px 0;
       white-space: pre-wrap;
       font-family: monospace;
-    }
-
-    .error-log {
-      color: #f87171;
-      background: #2d1a1f;
-      padding: 6px 12px;
-      border-radius: 12px;
-      margin: 6px 0;
-      font-size: 12px;
-    }
-
-    .info-log {
-      color: #94a3b8;
     }
 
     .footer-note {
@@ -256,21 +234,18 @@
       width: 6px;
       height: 6px;
     }
-
     ::-webkit-scrollbar-track {
       background: #0f172a;
     }
-
     ::-webkit-scrollbar-thumb {
       background: #2d3a5e;
       border-radius: 8px;
     }
-
     button i, label i {
       margin-right: 6px;
     }
   </style>
-  <!-- TypeScript Compiler from CDN (latest stable) -->
+  <!-- TypeScript Compiler -->
   <script src="https://cdn.jsdelivr.net/npm/typescript@5.3.3/lib/typescript.js"></script>
 </head>
 <body>
@@ -300,20 +275,20 @@
   </div>
 
   <div class="split-pane">
-    <!-- Editor Panel -->
+    <!-- Editor Panel with CodeMirror -->
     <div class="editor-area">
       <div class="pane-header">
         <i class="fas fa-code"></i> TypeScript Code
       </div>
-      <textarea id="tsCode" class="ts-textarea" spellcheck="false"></textarea>
+      <div id="tsEditor"></div>
     </div>
 
-    <!-- Output Panel -->
+    <!-- Output Panel with CodeMirror read-only -->
     <div class="output-area">
       <div class="pane-header">
         <i class="fab fa-js"></i> JavaScript Output
       </div>
-      <pre id="jsOutput" class="js-preview">// Click "Compile" or enable Auto mode</pre>
+      <div id="jsOutput"></div>
       <div class="pane-header" style="border-top: none;">
         <i class="fas fa-terminal"></i> Console & Diagnostics
       </div>
@@ -323,30 +298,55 @@
     </div>
   </div>
   <div class="footer-note">
-    <span><i class="fas fa-code-branch"></i> Developed By → <a href="https://github.com/Bahrul-Rozak">Bahrul Rozak</a></span>
+    <span><i class="fas fa-code-branch"></i> Embed anywhere → <code>&lt;iframe src="..." width="100%" height="650" frameborder="0"&gt;&lt;/iframe&gt;</code></span>
     <span class="powered"><i class="fas fa-heart"></i> Powered by CODEPOLITAN</span>
   </div>
 </div>
 
 <script>
   (function() {
-    // ----- DOM elements -----
-    const tsEditor = document.getElementById('tsCode');
-    const jsOutputPre = document.getElementById('jsOutput');
-    const consoleDiv = document.getElementById('consolePanel');
+    // Initialize CodeMirror editors
+    const tsEditorElem = document.getElementById('tsEditor');
+    const jsOutputElem = document.getElementById('jsOutput');
+    
+    const tsCodeMirror = CodeMirror(tsEditorElem, {
+      mode: 'javascript',   // TypeScript syntax is close to JS
+      theme: 'dracula',
+      lineNumbers: true,
+      lineWrapping: true,
+      tabSize: 2,
+      autoCloseBrackets: true,
+      matchBrackets: true,
+      viewportMargin: Infinity,
+      extraKeys: {
+        "Ctrl-Space": "autocomplete"
+      }
+    });
+    
+    const jsOutputMirror = CodeMirror(jsOutputElem, {
+      mode: 'javascript',
+      theme: 'dracula',
+      lineNumbers: true,
+      readOnly: true,
+      lineWrapping: true,
+      viewportMargin: Infinity
+    });
+    
+    // DOM elements
     const compileBtn = document.getElementById('compileBtn');
     const runBtn = document.getElementById('runBtn');
     const copyBtn = document.getElementById('copyBtn');
     const targetSelect = document.getElementById('targetSelect');
     const strictCheck = document.getElementById('strictMode');
     const autoCompileCheck = document.getElementById('autoCompile');
+    const consoleDiv = document.getElementById('consolePanel');
 
     // state
     let currentCompiledJS = '';
     let compileErrorOccurred = false;
     let tsLoaded = typeof ts !== 'undefined';
 
-    // --- helper: mapping target string to ts.ScriptTarget
+    // Helper: get ScriptTarget
     function getTargetFromString(targetStr) {
       if (!tsLoaded) return ts.ScriptTarget.ES2015;
       const map = {
@@ -358,7 +358,6 @@
       return map[targetStr] || ts.ScriptTarget.ES2015;
     }
 
-    // Format diagnostic from TypeScript
     function formatDiagnostic(diagnostic) {
       if (!diagnostic) return 'Unknown error';
       if (typeof diagnostic.messageText === 'string') return diagnostic.messageText;
@@ -372,16 +371,6 @@
       }
     }
 
-    // Clear console panel
-    function clearConsole(keepPlaceholder = false) {
-      if (keepPlaceholder) {
-        consoleDiv.innerHTML = '<pre class="info-log"><i class="fas fa-hourglass-half"></i> Compiling...</pre>';
-      } else {
-        consoleDiv.innerHTML = '';
-      }
-    }
-
-    // Escape HTML
     function escapeHtml(str) {
       if (!str) return '';
       return str.replace(/[&<>]/g, function(m) {
@@ -392,7 +381,6 @@
       });
     }
 
-    // Add message to console panel (no emoji)
     function addConsoleMessage(message, type = 'log') {
       const msgDiv = document.createElement('pre');
       msgDiv.style.margin = '4px 0';
@@ -417,14 +405,13 @@
       msgDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
-    // Main compilation function
     function performCompile() {
       if (!tsLoaded) {
         addConsoleMessage("TypeScript library not loaded yet, please try again.", "error");
         return false;
       }
 
-      const sourceCode = tsEditor.value;
+      const sourceCode = tsCodeMirror.getValue();
       const targetStr = targetSelect.value;
       const strictEnabled = strictCheck.checked;
 
@@ -461,10 +448,10 @@
           }
           if (result.outputText) {
             currentCompiledJS = result.outputText;
-            jsOutputPre.innerText = currentCompiledJS || '// Compilation produced errors, but output is shown.';
+            jsOutputMirror.setValue(currentCompiledJS || '// Compilation produced errors, but output is shown.');
           } else {
             currentCompiledJS = '';
-            jsOutputPre.innerText = '// Compilation failed. Fix TypeScript errors above.';
+            jsOutputMirror.setValue('// Compilation failed. Fix TypeScript errors above.');
           }
           const errorCount = diagnostics.filter(d => d.category === ts.DiagnosticCategory.Error).length;
           addConsoleMessage(`Compilation finished with ${errorCount} error(s).`, 'error');
@@ -473,7 +460,7 @@
           compileErrorOccurred = false;
           const generatedJS = result.outputText || '';
           currentCompiledJS = generatedJS;
-          jsOutputPre.innerText = generatedJS || '// (empty output)';
+          jsOutputMirror.setValue(generatedJS || '// (empty output)');
           if (diagnostics.length > 0) {
             for (const diag of diagnostics) {
               if (diag.category === ts.DiagnosticCategory.Warning) {
@@ -488,13 +475,12 @@
         consoleDiv.innerHTML = '';
         compileErrorOccurred = true;
         currentCompiledJS = '';
-        jsOutputPre.innerText = '// Runtime error during compilation. Check TypeScript syntax.';
+        jsOutputMirror.setValue('// Runtime error during compilation. Check TypeScript syntax.');
         addConsoleMessage(`Compiler internal error: ${err.message || err}`, 'error');
         return false;
       }
     }
 
-    // Run compiled JavaScript with console capture
     function runCompiledCode() {
       let jsToRun = currentCompiledJS;
       if (compileErrorOccurred || !jsToRun.trim()) {
@@ -574,12 +560,11 @@
       }
     }
     
-    // Copy JS to clipboard
     function copyJSOutput() {
       if (!currentCompiledJS && !compileErrorOccurred) {
         performCompile();
       }
-      const jsCode = jsOutputPre.innerText;
+      const jsCode = jsOutputMirror.getValue();
       if (!jsCode || (jsCode.includes("Compilation failed") && compileErrorOccurred)) {
         addConsoleMessage("No valid JavaScript code to copy.", "error");
         return;
@@ -591,7 +576,6 @@
       });
     }
     
-    // Debounce for auto compile
     let debounceTimer = null;
     function scheduleCompile() {
       if (autoCompileCheck.checked) {
@@ -603,7 +587,6 @@
       }
     }
     
-    // Event listeners
     compileBtn.addEventListener('click', () => {
       performCompile();
     });
@@ -627,7 +610,7 @@
     
     targetSelect.addEventListener('change', onCompilerOptionChange);
     strictCheck.addEventListener('change', onCompilerOptionChange);
-    tsEditor.addEventListener('input', () => {
+    tsCodeMirror.on('change', () => {
       scheduleCompile();
     });
     
@@ -640,7 +623,6 @@
       }
     });
     
-    // Default TypeScript code - simple Hello World example
     const defaultCode = `// Simple Hello World in TypeScript
 const greeting: string = "Hello, World!";
 console.log(greeting);
@@ -656,8 +638,7 @@ console.log(sayHello("TypeScript User"));
 const version: number = 5.3;
 console.log(\`TypeScript version \${version} is powering this embed.\`);
 `;
-
-    tsEditor.value = defaultCode;
+    tsCodeMirror.setValue(defaultCode);
     
     function initWhenReady() {
       if (typeof ts !== 'undefined') {
